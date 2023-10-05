@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import generics
-from .serializers import Rrgistrionsiralizer, Profilesiralizer, PasswordSirializer, CustomUserWithBlogsSerializer, Blogsiralizer
+from .serializers import Rrgistrionsiralizer, Profilesiralizer, ImageSirializer, CustomUserWithBlogsSerializer, Blogsiralizer
 from rest_framework.permissions import AllowAny
 from rest_framework import status, permissions
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -59,7 +59,7 @@ class UserProfileImage(generics.UpdateAPIView):
 
     def put(self, request):
         user = request.user
-        serializer = PasswordSirializer(user, data=request.data, partial=True)
+        serializer = ImageSirializer(user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -113,3 +113,43 @@ class getProfileWithBlog(generics.ListAPIView):
         username = self.request.user
         queryset = Blogs.objects.filter(username=username)
         return queryset
+
+
+class getOtherProfileWithBlog(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = CustomUserWithBlogsSerializer
+
+    def get_queryset(self):
+        id = self.kwargs['username']
+        username = get_object_or_404(CustomUser, username=id)
+        print(username.username)
+        queryset = Blogs.objects.filter(username=username.id)
+        return queryset
+
+
+class DeleteProfile(generics.DestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request):
+        user = get_object_or_404(CustomUser, email=request.user)
+        if user:
+            user.delete()
+            return Response({"message": "user Delete Successful"}, status=status.HTTP_204_NO_CONTENT)
+        return Response({"message": "user not found"}, status=status.HTTP_204_NO_CONTENT)
+
+class AddandRemoveLike(generics.CreateAPIView):
+    permission_classes=[permissions.IsAuthenticated]
+
+    def post(self, request,id):
+        user_id=request.user.id
+        user_name=request.user
+        obj=get_object_or_404(Blogs,id=id)
+        if obj:
+            print(obj.likes.all())
+            if user_name in obj.likes.all():
+                obj.likes.remove(user_id)
+                return Response({'message': f'You disliked {obj.title}.'}, status=status.HTTP_200_OK)
+            else:
+                obj.likes.add(user_id)
+                return Response({'message': f'You liked  {obj.title}'}, status=status.HTTP_201_CREATED)    
+        return Response({'message': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)

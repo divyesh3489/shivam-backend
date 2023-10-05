@@ -38,10 +38,14 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
 
 class Blogs(models.Model):
-    username = models.ForeignKey(CustomUser, related_name='blogs', on_delete=models.CASCADE)
+    username = models.ForeignKey(
+        CustomUser, related_name='blogs', on_delete=models.CASCADE)
     title = models.CharField(max_length=250)
-    image=models.ImageField(upload_to='blogs/')
-    Nature=models.BooleanField(default=False)
-    Technology=models.BooleanField(default=False)
-    Lifestyle=models.BooleanField(default=False)
-    Art=models.BooleanField(default=False)
+    image = models.ImageField(upload_to='blogs/')
+    Nature = models.BooleanField(default=False)
+    Technology = models.BooleanField(default=False)
+    Lifestyle = models.BooleanField(default=False)
+    Art = models.BooleanField(default=False)
+    likes = models.ManyToManyField(CustomUser, default=1,related_name="user_Likes")
+    def __str__(self):
+        return self.title
