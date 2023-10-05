@@ -40,6 +40,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 class Blogs(models.Model):
     username = models.ForeignKey(CustomUser, related_name='blogs', on_delete=models.CASCADE)
     title = models.CharField(max_length=250)
-    description = models.TextField(max_length=500) 
     image=models.ImageField(upload_to='blogs/')
-    
+    Nature=models.BooleanField(default=False)
+    Technology=models.BooleanField(default=False)
+    Lifestyle=models.BooleanField(default=False)
+    Art=models.BooleanField(default=False)

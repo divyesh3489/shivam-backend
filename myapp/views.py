@@ -1,8 +1,8 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import generics
-from .serializers import Rrgistrionsiralizer, Profilesiralizer, PasswordSirializer, CustomUserWithBlogsSerializer
+from .serializers import Rrgistrionsiralizer, Profilesiralizer, PasswordSirializer, CustomUserWithBlogsSerializer, Blogsiralizer
 from rest_framework.permissions import AllowAny
 from rest_framework import status, permissions
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -27,6 +27,7 @@ class CustomUserCreate(APIView):
 
 class BlacklistTokenView(APIView):
     permission_classes = [AllowAny]
+
     def post(self, request):
         try:
             # Use get() to avoid KeyError if 'refresh' is missing
@@ -55,7 +56,7 @@ class profileUser(generics.ListAPIView):
 class UserProfileImage(generics.UpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
-    
+
     def put(self, request):
         user = request.user
         serializer = PasswordSirializer(user, data=request.data, partial=True)
@@ -64,6 +65,7 @@ class UserProfileImage(generics.UpdateAPIView):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 class ProfileFatch(generics.RetrieveAPIView):
     def get(self, request):
         user = request.user
@@ -71,8 +73,43 @@ class ProfileFatch(generics.RetrieveAPIView):
         return Response(serializer.data)
 
 
+class UploadBlog(generics.CreateAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = Blogsiralizer
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        data = request.data.copy()
+        data['username'] = request.user.id
+        serializer = self.serializer_class(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Post Upload successful"}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DistroyBlog(generics.DestroyAPIView):
+    def delete(self, request, id):
+        try:
+            data = get_object_or_404(Blogs, id=id)
+            if data.username == request.user:
+                data.delete()
+                return Response({'message': 'Post Delete Successful'}, status=status.HTTP_202_ACCEPTED)
+        except:
+            return Response({'message': 'Post Not Found'}, status=status.HTTP_400_BAD_REQUEST)
+
 
 class Getblogs(generics.ListAPIView):
     queryset = Blogs.objects.all().order_by('-id')
     serializer_class = CustomUserWithBlogsSerializer
-    # permission_classes=[permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class getProfileWithBlog(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = CustomUserWithBlogsSerializer
+
+    def get_queryset(self):
+        username = self.request.user
+        queryset = Blogs.objects.filter(username=username)
+        return queryset
